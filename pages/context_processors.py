@@ -23,7 +23,7 @@ def pages_navigation(request):
 
 def current_page(request):
     """ 
-    Return a page object with the current path. Conflict docstring
+    Return a page object with the current path. Change docstring
     
     If it doesn't exist, return the page of the nearest
     parent.
