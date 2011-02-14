@@ -20,3 +20,35 @@ def pages_navigation(request):
         'pages_navigation': pages,
         'current_page': None
     }
+
+def current_page(request):
+    """ 
+    Return a page object with the current path.
+    
+    If it doesn't exist, return the page of the nearest
+    parent.
+    
+    So if a page exists with the slug '/pages/test-page'
+    it will be returned.
+    
+    If the path requested is '/pages/test-page/application/page'
+    it will try:
+    
+    '/pages/test-page/application/page'
+    '/pages/test-page/application/'
+    '/pages/test-page/'
+    '/pages/'
+    
+    And return the first one that exists
+    """
+    
+    page = None
+    bits = request.path.split('/')
+    i = len(bits)
+    
+    while page == None or i == 0:
+        path = '/'.join(bits[:i])
+        page = Page.objects.from_path(path, None)
+        i -= 1
+    
+    return {'current_page': page}
