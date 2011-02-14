@@ -25,7 +25,7 @@ def current_page(request):
     """ 
     Return a page object with the current path. Change docstring
     
-    If it doesn't exist, return the page of the nearest
+    If it doesn't exist, return the page of the nearest whut
     parent.
     
     So if a page exists with the slug '/pages/test-page'
