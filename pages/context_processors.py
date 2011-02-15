@@ -34,6 +34,8 @@ def current_page(request):
     If the path requested is '/pages/test-page/application/page'
     it will try:
     
+    change request 3
+    
     '/pages/test-page/application/page'
     '/pages/test-page/application/'
     '/pages/test-page/'
