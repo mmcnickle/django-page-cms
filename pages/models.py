@@ -119,6 +119,7 @@ class Page(MPTTModel):
         self._languages = None
         self._complete_slug = None
         self._content_dict = None
+        self._is_first_root = None
         super(Page, self).__init__(*args, **kwargs)
 
     def save(self, *args, **kwargs):
@@ -178,6 +179,7 @@ class Page(MPTTModel):
         """Invalidate cached data for this page."""
 
         cache.delete(self.PAGE_LANGUAGES_KEY % (self.id))
+        cache.delete('PAGE_FIRST_ROOT_ID')
         self._languages = None
         self._complete_slug = None
         self._content_dict = dict()
@@ -219,13 +221,23 @@ class Page(MPTTModel):
         return languages
 
     def is_first_root(self):
-        """Return ``True`` if the page is the first root pages."""
+        """Return ``True`` if this page is the first root pages."""
         if self.parent:
             return False
-        root_pages = Page.objects.root()
-        if len(root_pages):
-            return Page.objects.root()[0].id == self.id
-        return False
+        if self._is_first_root is not None:
+            return self._is_first_root
+        first_root_id = cache.get('PAGE_FIRST_ROOT_ID')
+        if first_root_id is not None:
+            self._is_first_root = first_root_id == self.id
+            return self._is_first_root
+        try:
+            first_root_id = Page.objects.root().values('id')[0]['id']
+        except IndexError:
+            first_root_id = None
+        if first_root_id is not None:
+            cache.set('PAGE_FIRST_ROOT_ID', first_root_id)
+        self._is_first_root = self.id == first_root_id
+        return self._is_first_root
 
     def get_url_path(self, language=None):
         """Return the URL's path component. Add the language prefix if
@@ -259,7 +271,7 @@ class Page(MPTTModel):
         """
         return self.get_url_path(language=language)
 
-    def get_complete_slug(self, language=None):
+    def get_complete_slug(self, language=None, hideroot=True):
         """Return the complete slug of this page by concatenating
         all parent's slugs.
 
@@ -276,7 +288,7 @@ class Page(MPTTModel):
         elif language in self._complete_slug:
             return self._complete_slug[language]
 
-        if settings.PAGE_HIDE_ROOT_SLUG and self.is_first_root():
+        if hideroot and settings.PAGE_HIDE_ROOT_SLUG and self.is_first_root():
             url = u''
         else:
             url = u'%s' % self.slug(language)
@@ -433,6 +445,7 @@ class Page(MPTTModel):
     def __unicode__(self):
         """Representation of the page, saved or not."""
         if self.id:
+            # without ID a slug cannot be retrieved
             slug = self.slug()
             if slug:
                 return slug

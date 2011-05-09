@@ -35,8 +35,8 @@ USE_I18N = True
 MEDIA_ROOT = STATIC_ROOT = os.path.join(PROJECT_DIR, 'media')
 MEDIA_URL = '/media/'
 
-STATIC_ROOT = os.path.join(PROJECT_DIR, 'media', 'static')
-STATIC_URL = MEDIA_URL + 'static/'
+STATIC_ROOT = os.path.join(PROJECT_DIR, 'static')
+STATIC_URL = '/static/'
 
 # Absolute path to the directory that holds pages media.
 # PAGES_MEDIA_ROOT = os.path.join(STATIC_ROOT, 'pages', 'media', 'pages')
@@ -77,6 +77,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
 )
 
 ROOT_URLCONF = 'example.urls'
@@ -115,9 +116,9 @@ PAGE_TINYMCE = False
 PAGE_TAGGING = True
 
 PAGE_CONNECTED_MODELS = [{
-    'model':'pages.testproj.documents.models.Document',
-    'form':'pages.testproj.documents.models.DocumentForm',
-    'options':{
+    'model': 'pages.testproj.documents.models.Document',
+    'form': 'pages.testproj.documents.models.DocumentForm',
+    'options': {
             'extra': 3,
             'max_num': 10,
         },
@@ -158,7 +159,6 @@ PAGE_LANGUAGE_MAPPING = language_mapping
 
 PAGE_DEFAULT_TEMPLATE = 'pages/examples/index.html'
 
-PAGES_MEDIA_URL = '/static/'
 
 PAGE_TEMPLATES = (
     ('pages/examples/nice.html', 'nice one'),
@@ -174,6 +174,8 @@ PAGE_USE_SITE_ID = False
 HAYSTACK_SITECONF = 'example.search_sites'
 HAYSTACK_SEARCH_ENGINE = 'whoosh'
 HAYSTACK_WHOOSH_PATH = os.path.join(PROJECT_DIR, 'whoosh_index')
+
+PAGE_REAL_TIME_SEARCH = False
 
 COVERAGE_EXCLUDE_MODULES = (
     "pages.migrations.*",

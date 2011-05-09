@@ -29,12 +29,15 @@ First you need a `urls.py` file that you can register to the CMS. It might look 
     It's not necessary to decorate your views if you only call them via the CMS or you don't need those variables.
 
 Then you need to register the urlconf module of your application to use it
-within the admin interface. Here is an example for a document application::
+within the admin interface. Put this code in you urls.py `before` admin.autodiscover(). Here is an example for a document application.::
 
     from pages.urlconf_registry import register_urlconf
 
     register_urlconf('Documents', 'pages.testproj.documents.urls',
         label='Display documents')
+
+    # this need to be executed after the registry happened.
+    admin.autodiscover()
 
 As soon as you have registered your `urls.py`, a new field will appear in the page administration.
 Choose the `Display documents`. The view used to render this page on the frontend
@@ -92,8 +95,8 @@ The `document_view` will receive a bunch of extra parameters related to the CMS:
 Integrate application models and forms into the page admin
 ==========================================================
 
-Gerbi provide a solid way to integrate external application
-forms for managing page related objects (create/delete/update) into the page's administration interface.
+If you don't want to sublass the PageAdmin class Gerbi provides an alternative way
+to integrate external application into the page's administration interface.
 
 For this you need an object with foreign key pointing to a page::
 
@@ -103,7 +106,7 @@ For this you need an object with foreign key pointing to a page::
         title = models.CharField(_('title'), max_length=100, blank=False)
         text = models.TextField(_('text'), blank=True)
 
-        # the foreign key *must* be called page
+        # You need a foreign key to the page object, and it must be named page
         page = models.ForeignKey(Page)
 
     class DocumentForm(ModelForm):

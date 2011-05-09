@@ -9,7 +9,7 @@ from django.conf import settings
 from pages import settings as pages_settings
 from pages.models import Content, Page
 from pages.placeholders import PlaceholderNode, ImagePlaceholderNode
-from pages.placeholders import VideoPlaceholderNode
+from pages.placeholders import VideoPlaceholderNode, ContactPlaceholderNode
 from pages.placeholders import parse_placeholder
 
 register = template.Library()
@@ -294,12 +294,13 @@ except ImportError:
 
 class GetPageNode(template.Node):
     """get_page Node"""
-    def __init__(self, page, varname):
-        self.page = page
+    def __init__(self, page_filter, varname):
+        self.page_filter = page_filter
         self.varname = varname
 
     def render(self, context):
-        page = get_page_from_string_or_id(self.page)
+        page_or_id = self.page_filter.resolve(context)
+        page = get_page_from_string_or_id(page_or_id)
         context[self.varname] = page
         return ''
 
@@ -320,21 +321,24 @@ def do_get_page(parser, token):
     if bits[-2] != 'as':
         raise TemplateSyntaxError(
             '%r expects "as" as the second argument' % bits[0])
-    page = bits[1]
+    page_filter = parser.compile_filter(bits[1])
     varname = bits[-1]
-    return GetPageNode(page, varname)
+    return GetPageNode(page_filter, varname)
 do_get_page = register.tag('get_page', do_get_page)
 
 
 class GetContentNode(template.Node):
     """Get content node"""
-    def __init__(self, page, content_type, varname, lang):
+    def __init__(self, page, content_type, varname, lang, lang_filter):
         self.page = page
         self.content_type = content_type
         self.varname = varname
         self.lang = lang
+        self.lang_filter = lang_filter
 
     def render(self, context):
+        if self.lang_filter:
+            self.lang = self.lang_filter.resolve(context)
         context[self.varname] = _get_content(
             context,
             self.page.resolve(context),
@@ -374,9 +378,12 @@ def do_get_content(parser, token):
     content_type = parser.compile_filter(bits[2])
     varname = bits[-1]
     lang = None
+    lang_filter = None
     if len(bits) == 6:
-        lang = parser.compile_filter(bits[3])
-    return GetContentNode(page, content_type, varname, lang)
+        lang = bits[3]
+    else:
+        lang_filter = parser.compile_filter("lang")
+    return GetContentNode(page, content_type, varname, lang, lang_filter)
 do_get_content = register.tag('get_content', do_get_content)
 
 
@@ -445,6 +452,14 @@ def do_videoplaceholder(parser, token):
     name, params = parse_placeholder(parser, token)
     return VideoPlaceholderNode(name, **params)
 register.tag('videoplaceholder', do_videoplaceholder)
+
+def do_contactplaceholder(parser, token):
+    """
+    Method that parse the contactplaceholder template tag.
+    """
+    name, params = parse_placeholder(parser, token)
+    return ContactPlaceholderNode(name, **params)
+register.tag('contactplaceholder', do_contactplaceholder)
 
 
 def language_content_up_to_date(page, language):

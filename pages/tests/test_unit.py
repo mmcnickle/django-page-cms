@@ -8,6 +8,7 @@ from pages.http import get_language_from_request, get_slug
 from pages.http import get_request_mock, remove_slug
 from pages.utils import export_po_files, import_po_files
 from pages.views import details
+from pages.templatetags.pages_tags import get_page_from_string_or_id
 
 import django
 from django.http import Http404
@@ -111,16 +112,16 @@ class UnitTestCase(TestCase):
     def test_get_page_template_tag(self):
         """Test get_page template tag."""
         context = Context({})
-        pl1 = """{% load pages_tags %}{% get_page get-page-slug as toto %}{{ toto }}"""
+        pl1 = """{% load pages_tags %}{% get_page "get-page-slug" as toto %}{{ toto }}"""
         template = get_template_from_string(pl1)
         self.assertEqual(template.render(context), u'None')
-        page = self.new_page({'slug':'get-page-slug'})
+        page = self.new_page({'slug': 'get-page-slug'})
         self.assertEqual(template.render(context), u'get-page-slug')
 
     def test_placeholder_all_syntaxes(self):
         """Test placeholder syntaxes."""
         page = self.new_page()
-        context = Context({'current_page': page, 'lang':'en-us'})
+        context = Context({'current_page': page, 'lang': 'en-us'})
 
         pl1 = """{% load pages_tags %}{% placeholder title as hello %}"""
         template = get_template_from_string(pl1)
@@ -283,7 +284,7 @@ class UnitTestCase(TestCase):
         """
         Test the {% get_content %} template tag
         """
-        page_data = {'title':'test', 'slug':'test'}
+        page_data = {'title': 'test', 'slug': 'test'}
         page = self.new_page(page_data)
 
         context = RequestContext(MockRequest, {'page': page})
@@ -295,6 +296,39 @@ class UnitTestCase(TestCase):
                             '{% get_content page "title" as content %}'
                             '{{ content }}')
         self.assertEqual(template.render(context), page_data['title'])
+
+    def test_get_content_tag_bug(self):
+        """
+        Make sure that {% get_content %} use the "lang" context variable if
+        no language string is provided.
+        """
+        page_data = {'title': 'test', 'slug': 'english'}
+        page = self.new_page(page_data)
+        Content(page=page, language='fr-ch', type='title', body='french').save()
+        Content(page=page, language='fr-ch', type='slug', body='french').save()
+        self.assertEqual(page.slug(language='fr-ch'), 'french')
+        self.assertEqual(page.slug(language='en-us'), 'english')
+
+        # default
+        context = RequestContext(MockRequest, {'page': page})
+        template = Template('{% load pages_tags %}'
+                            '{% get_content page "slug" as content %}'
+                            '{{ content }}')
+        self.assertEqual(template.render(context), 'english')
+
+        # french specified
+        context = RequestContext(MockRequest, {'page': page, 'lang': 'fr'})
+        template = Template('{% load pages_tags %}'
+                            '{% get_content page "slug" as content %}'
+                            '{{ content }}')
+        self.assertEqual(template.render(context), 'french')
+
+        # english specified
+        context = RequestContext(MockRequest, {'page': page, 'lang': 'en-us'})
+        template = Template('{% load pages_tags %}'
+                            '{% get_content page "slug" as content %}'
+                            '{{ content }}')
+        self.assertEqual(template.render(context), 'english')
 
     def test_show_content_tag(self):
         """
@@ -333,7 +367,7 @@ class UnitTestCase(TestCase):
         """
         Test a {% show_absolute_url %} template tag  bug.
         """
-        page_data = {'title':'english', 'slug':'english'}
+        page_data = {'title': 'english', 'slug': 'english'}
         page = self.new_page(page_data)
         Content(page=page, language='fr-ch', type='title', body='french').save()
         Content(page=page, language='fr-ch', type='slug', body='french').save()
@@ -561,11 +595,14 @@ class UnitTestCase(TestCase):
         doc.save()
 
         req = get_request_mock()
-        self.set_setting("PAGE_HIDE_ROOT_SLUG", True)
+        self.set_setting("PAGE_HIDE_ROOT_SLUG", False)
+        page1.invalidate()
+        page2.invalidate()
+        
         def _get_context_page(path):
             return details(req, path, 'en-us')
         self.assertEqual(_get_context_page('/').status_code, 200)
-        self.assertEqual(_get_context_page('/page1').status_code, 200)
+        self.assertEqual(_get_context_page('/page1/').status_code, 200)
         self.assertEqual(_get_context_page('/page1/').status_code, 200)
         self.assertEqual(_get_context_page('/page1/page2').status_code, 200)
         self.assertEqual(_get_context_page('/page1/page2/').status_code, 200)
@@ -606,8 +643,8 @@ class UnitTestCase(TestCase):
 
     def test_page_methods(self):
         """Test that some methods run properly."""
-        page1 = self.new_page(content={'slug':'page1', 'title':'hello'})
-        page2 = self.new_page(content={'slug':'page2'})
+        page1 = self.new_page(content={'slug': 'page1', 'title':'hello'})
+        page2 = self.new_page(content={'slug': 'page2'})
         page1.save()
         page2.save()
         page2.parent = page1
@@ -623,13 +660,90 @@ class UnitTestCase(TestCase):
         p = Page(author=page1.author)
         self.assertEqual(unicode(p), u"Page without id")
         p.save()
-        self.assertEqual(unicode(p), u"page-%d" % p.id)
+        self.assertEqual(unicode(p), u"Page %d" % p.id)
 
     def test_context_processor(self):
         """Test that the page's context processor is properly activated."""
         from pages.views import details
         req = get_request_mock()
-        page1 = self.new_page(content={'slug':'page1', 'title':'hello'})
+        page1 = self.new_page(content={'slug': 'page1', 'title': 'hello'})
         page1.save()
         self.set_setting("PAGES_MEDIA_URL", "test_request_context")
         self.assertContains(details(req, path='/'), "test_request_context")
+
+    def test_get_page_from_id_context_variable(self):
+        """Test get_page_from_string_or_id with an id context variable."""
+        page = self.new_page({'slug': 'test'})
+        self.assertEqual(get_page_from_string_or_id(unicode(page.id)), page)
+
+        content = Content(page=page, language='en-us', type='test_id',
+            body=page.id)
+        content.save()
+        context = Context({'current_page': page})
+        context = RequestContext(MockRequest, context)
+        template = Template('{% load pages_tags %}'
+                            '{% placeholder test_id as str %}'
+                            '{% get_page str as p %}'
+                            '{{ p.slug }}')
+        self.assertEqual(template.render(context), 'test')
+
+    def test_get_page_from_slug_context_variable(self):
+        """Test get_page_from_string_or_id with an slug context variable."""
+        page = self.new_page({'slug': 'test'})
+
+        context = Context({'current_page': page})
+        context = RequestContext(MockRequest, context)
+        template = Template('{% load pages_tags %}'
+                            '{% placeholder slug as str %}'
+                            '{% get_page str as p %}'
+                            '{{ p.slug }}')
+        self.assertEqual(template.render(context), 'test')
+
+        template = Template('{% load pages_tags %}'
+                            '{% get_page "test" as p %}'
+                            '{{ p.slug }}')
+        self.assertEqual(template.render(context), 'test')
+
+    def test_get_page_template_tag_with_page_arg_as_id(self):
+        """Test get_page template tag with page argument given as a page id"""
+        context = Context({})
+        pl1 = """{% load pages_tags %}{% get_page 1 as toto %}{{ toto }}"""
+        template = get_template_from_string(pl1)
+        page = self.new_page({'id': 1, 'slug': 'get-page-slug'})
+        self.assertEqual(template.render(context), u'get-page-slug')
+
+    def test_get_page_template_tag_with_variable_containing_page_id(self):
+        """Test get_page template tag with page argument given as a page id"""
+        context = Context({})
+        pl1 = ('{% load pages_tags %}{% placeholder somepage as page_id %}'
+            '{% get_page page_id as toto %}{{ toto }}')
+        template = get_template_from_string(pl1)
+        page = self.new_page({'id': 1, 'slug': 'get-page-slug',
+            'somepage': '1'})
+        context = Context({'current_page': page})
+        self.assertEqual(template.render(context), u'get-page-slug')
+
+    def test_get_page_template_tag_with_variable_containing_page_slug(self):
+        """Test get_page template tag with page argument given as a page id"""
+        context = Context({})
+        pl1 = ('{% load pages_tags %}{% placeholder somepage as slug %}'
+            '{% get_page slug as toto %}{{ toto }}')
+        template = get_template_from_string(pl1)
+        page = self.new_page({'slug': 'get-page-slug', 'somepage':
+            'get-page-slug' })
+        context = Context({'current_page': page})
+        self.assertEqual(template.render(context), u'get-page-slug')
+        
+    def test_variable_disapear_in_block(self):
+        """Try to test the disapearance of a context variable in a block."""
+        tpl = ("{% load pages_tags %}"
+          "{% placeholder slug as test_value untranslated %}"
+          "{% block someblock %}"
+          "{% get_page test_value as toto %}"
+          "{{ toto.slug }}"
+          "{% endblock %}")
+          
+        template = get_template_from_string(tpl)
+        page = self.new_page({'slug': 'get-page-slug'})
+        context = Context({'current_page': page})
+        self.assertEqual(template.render(context), u'get-page-slug')
