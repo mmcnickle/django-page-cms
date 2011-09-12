@@ -18,41 +18,47 @@ def pages_navigation(request):
     pages = Page.objects.navigation().order_by("tree_id")
     return {
         'pages_navigation': pages,
-        'current_page': None
     }
 
 def current_page(request):
-    """ 
+    """
     Return a page object with the current path.
-    
+
     If it doesn't exist, return the page of the nearest whut
-    
+
     change request 2
     parent.
-    
+
     So if a page exists with the slug '/pages/test-page'
     it will be returned.
-    
+
     If the path requested is '/pages/test-page/application/page'
     it will try:
-    
+
     change request 3
-    
+
     '/pages/test-page/application/page'
     '/pages/test-page/application/'
     '/pages/test-page/'
     '/pages/'
-    
+
     And return the first one that exists
     """
-    
+
     page = None
     bits = request.path.split('/')
     i = len(bits)
-    
-    while page == None or i == 0:
+
+    while page == None:
         path = '/'.join(bits[:i])
         page = Page.objects.from_path(path, None)
+
+        if i == 0:
+            break
+
         i -= 1
-    
+
     return {'current_page': page}
+
+
+

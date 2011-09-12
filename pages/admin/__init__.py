@@ -322,7 +322,7 @@ class PageAdmin(admin.ModelAdmin):
                 Content.objects.filter(body__icontains=query)]))
             pages = Page.objects.filter(pk__in=page_ids)
         else:
-            pages = Page.objects.root()
+            pages = Page.objects.filter(parent__isnull=True)
         if settings.PAGE_HIDE_SITES:
             pages = pages.filter(sites=settings.SITE_ID)
 

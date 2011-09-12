@@ -14,7 +14,7 @@ if settings.PAGE_USE_LANGUAGE_PREFIX:
     )
 else:
     urlpatterns = patterns('',
-        url(r'^(?P<path>.*)$', details, name='pages-details-by-path'),
+        url(r'^(?P<path>.*)/$', details, name='pages-details-by-path'),
         # can be used to change the URL of the root page
         #url(r'^$', details, name='pages-root'),
     )

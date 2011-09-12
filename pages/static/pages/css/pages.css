@@ -191,6 +191,11 @@ html[dir=rtl] .change-list .expand-collapse  {
 }
 
 /* Actions */
+
+#page-list {
+    clear: both;
+}
+
 #page-list .actions-pages {
     position: absolute;
     right: -5px;
@@ -235,6 +240,12 @@ html[dir=rtl] .change-list .actions-pages a {
     background-image: url(../images/icons/icons.gif);
     background-position: -2px -12px;
 }
+
+.change-list .actions-pages a.addlink {
+    background-image: url(../images/icons/icons.gif);
+    background-position: -2px 0px;
+}
+
 .change-list .pagelink-broken {
     float: left;
     height: 12px;
@@ -298,6 +309,7 @@ html[dir=rtl] .change-list .actions-pages a {
 .change-list .insert {
     display: none;
     position: absolute;
+    width: auto;
     right: 0; top: -4px;
     height: 21px; /* IE6 fix */
 }

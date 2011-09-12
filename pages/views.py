@@ -24,7 +24,6 @@ class Details(object):
 
     def __call__(self, request, path=None, lang=None, delegation=True,
             **kwargs):
-
         current_page = False
 
         if path is None:
