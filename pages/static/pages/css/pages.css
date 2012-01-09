@@ -373,7 +373,7 @@ html[dir=rtl] .change-list .insert {
 .change-list .language-cell {
     width: 1%;
     white-space: nowrap;
-    padding: 5px 0 5px 10px;
+    /*padding: 10px 0 10px 10px;*/
 }
 .change-list .language-cell ul {
     margin: 0;
@@ -406,7 +406,7 @@ html[dir=rtl] .change-list .insert {
 .change-list .publish-cell {
     width: 1%;
     white-space: nowrap;
-    padding: 0 20px 0 10px;
+    /*padding: 0 20px 0 10px;*/
 }
 .change-list .publish-cell .box {
     width: 130px;
@@ -418,6 +418,7 @@ html[dir=rtl] .change-list .insert {
 .change-list .publish-cell img {
     width: 10px;
     height: 10px;
+    vertical-align: text-bottom;
 }
 .change-list .publish-cell .publish-select {
     margin: 2px;
@@ -428,14 +429,14 @@ html[dir=rtl] .change-list .insert {
 .change-list .template-cell {
     width: 1%;
     white-space: nowrap;
-    padding: 5px 10px;
+    /*padding: 5px 10px;*/
 }
 
 /* autor */
 .change-list .author-cell {
     width: 1%;
     white-space: nowrap;
-    padding: 5px 10px;
+    /*padding: 5px 10px;*/
 }
 
 /* change-form page =========================================== */
@@ -448,6 +449,7 @@ html[dir=rtl] .change-list .insert {
     display: inline; /* IE6 fix */
     margin-right: 1em;
 }
+
 html[dir=rtl] .change-form .sidebar {
     float:right;
     margin-left:1em;
@@ -463,6 +465,12 @@ html[dir=rtl] .change-form .sidebar {
     width: 148px;
 }
 
+.change-form .sidebar .form-row {
+    padding: 0 10px;
+}
+.change-form .sidebar fieldset {
+    padding-bottom: 1em;
+}
 .change-form .sidebar p.help,
 .change-form .sidebar .form-row p.help {
     margin-left: 0;
